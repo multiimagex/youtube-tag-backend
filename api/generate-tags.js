@@ -1,65 +1,53 @@
-const axios = require('axios');
-
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(req, res) {
+  // ✅ Allow only POST method
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const { title, count } = req.body;
-    if (!title) return res.status(400).json({ error: 'Title required' });
+    const { title } = req.body;
 
-    let tags = [
-      "youtube seo","video marketing","youtube growth","youtube tag generator",
-      "multiimagex","free youtube tools","best youtube tags","trending tags",
-      "youtube optimization","viral video tags"
-    ];
-
-    const titleLower = title.toLowerCase();
-
-    // Split into words
-    const words = titleLower.split(/\s+/).filter(w => w.length > 1);
-
-    // Phrase-level templates
-    let phrases = [];
-
-    if(words.length>1){
-      // Original order
-      phrases.push(titleLower);
-
-      // How-to pattern
-      phrases.push(`how to ${words.join(' ')}`);
-
-      // Hindi style variations
-      if(words.some(w=>/[^\x00-\x7F]/.test(w))){
-        phrases.push(words.join(' ')); // original Hindi
-        phrases.push(`${words[1]} ${words[0]} ${words.slice(2).join(' ')}`); // swap first two
-      }
-
-      // Permutations (simple swaps)
-      if(words.length>=3){
-        phrases.push(`${words[1]} ${words[0]} ${words[2]}`);
-        phrases.push(`${words[2]} ${words[0]} ${words[1]}`);
-      }
-    } else {
-      phrases.push(words[0]);
-      phrases.push(`how to ${words[0]}`);
+    if (!title || title.trim() === "") {
+      return res.status(400).json({ error: "Title is required" });
     }
 
-    // Add optional extra words
-    const extras = ['latest', 'free', 'online', 'HD', '2025', 'tips', 'guide'];
-    extras.forEach(e=> phrases.push(`${e} ${words.join(' ')}`));
+    const cleanTitle = title.trim().toLowerCase();
 
-    // Fetch related words from Datamuse
-    const promises = words.map(w =>
-      axios.get(`https://api.datamuse.com/words?ml=${encodeURIComponent(w)}&max=3`)
-    );
-    const results = await Promise.all(promises);
-    results.forEach(r=> r.data.forEach(obj=> phrases.push(obj.word)));
+    // 🔹 Simple smart tag logic
+    const tags = [
+      cleanTitle,
+      `how to ${cleanTitle}`,
+      `${cleanTitle} tutorial`,
+      `${cleanTitle} guide`,
+      `${cleanTitle} tips`,
+      `${cleanTitle} tricks`,
+      `best way to ${cleanTitle}`,
+      `${cleanTitle} 2025`,
+      `${cleanTitle} step by step`,
+      `${cleanTitle} kaise kare`,
+      `${cleanTitle} video`,
+      `${cleanTitle} full guide`,
+      `${cleanTitle} easy method`,
+      `learn ${cleanTitle}`,
+      `${cleanTitle} explained`,
+      `beginner ${cleanTitle}`,
+      `advanced ${cleanTitle}`,
+      // 🔹 Some default SEO tags
+      "youtube seo",
+      "video marketing",
+      "youtube growth",
+      "multiimagex",
+      "trending youtube tags",
+      "youtube optimization",
+      "viral video tags"
+    ];
 
-    tags = [...new Set([...tags, ...phrases])].slice(0, count || 50);
+    // Remove duplicates
+    const uniqueTags = [...new Set(tags)];
 
-    res.status(200).json({ tags });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(200).json({ tags: uniqueTags });
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
-};
+}
