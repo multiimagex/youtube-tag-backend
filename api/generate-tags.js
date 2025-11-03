@@ -1,11 +1,31 @@
 export default async function handler(req, res) {
-  // ✅ Allow only POST method
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
-    const { title } = req.body;
+    // ✅ Allow CORS for all origins
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    // ✅ Handle preflight requests
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
+
+    // ✅ Allow only POST
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    // ✅ Parse body safely
+    let title = "";
+    try {
+      title = req.body.title || "";
+    } catch (err) {
+      const buffers = [];
+      for await (const chunk of req) buffers.push(chunk);
+      const data = Buffer.concat(buffers).toString();
+      const parsed = JSON.parse(data);
+      title = parsed.title || "";
+    }
 
     if (!title || title.trim() === "") {
       return res.status(400).json({ error: "Title is required" });
@@ -13,7 +33,7 @@ export default async function handler(req, res) {
 
     const cleanTitle = title.trim().toLowerCase();
 
-    // 🔹 Simple smart tag logic
+    // 🔹 Smart tag generation
     const tags = [
       cleanTitle,
       `how to ${cleanTitle}`,
@@ -21,33 +41,30 @@ export default async function handler(req, res) {
       `${cleanTitle} guide`,
       `${cleanTitle} tips`,
       `${cleanTitle} tricks`,
-      `best way to ${cleanTitle}`,
-      `${cleanTitle} 2025`,
       `${cleanTitle} step by step`,
       `${cleanTitle} kaise kare`,
+      `easy ${cleanTitle} method`,
+      `best way to ${cleanTitle}`,
+      `complete ${cleanTitle} process`,
       `${cleanTitle} video`,
-      `${cleanTitle} full guide`,
-      `${cleanTitle} easy method`,
+      `${cleanTitle} 2025`,
       `learn ${cleanTitle}`,
+      `${cleanTitle} in hindi`,
       `${cleanTitle} explained`,
-      `beginner ${cleanTitle}`,
-      `advanced ${cleanTitle}`,
-      // 🔹 Some default SEO tags
-      "youtube seo",
-      "video marketing",
-      "youtube growth",
-      "multiimagex",
-      "trending youtube tags",
-      "youtube optimization",
-      "viral video tags"
+      `youtube seo`,
+      `video marketing`,
+      `multiimagex`,
+      `trending youtube tags`,
+      `youtube optimization`,
+      `viral video tags`
     ];
 
-    // Remove duplicates
     const uniqueTags = [...new Set(tags)];
 
+    // ✅ Return tags
     res.status(200).json({ tags: uniqueTags });
   } catch (error) {
-    console.error("❌ Server Error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("❌ Server crash:", error);
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 }
